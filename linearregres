@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Linear Regression Graph</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+      }
+
+      canvas {
+        border: 1px solid #ccc;
+        display: block;
+        margin: auto;
+        margin-top: 20px;
+      }
+
+      label {
+        font-size: 16px;
+        margin-bottom: 5px;
+      }
+
+      input {
+        padding: 8px;
+        font-size: 14px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button {
+        padding: 10px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <label for="numPoints">Number of Data Points:</label>
+    <input type="number" id="numPoints" min="2" value="5" />
+    <button onclick="createInputFields()">Start Entering Coordinates</button>
+    <button id="nextButton" onclick="nextCoordinate()" disabled>Next</button>
+    <button onclick="updateGraph()">Update Graph</button>
+
+    <div id="coordinatesContainer"></div>
+    <canvas id="scatterPlot" width="600" height="400"></canvas>
+
+    <script>
+      let pointCount = 1;
+      const points = [];
+
+      function createInputFields() {
+        const numPoints = parseInt(
+          document.getElementById("numPoints").value,
+          10
+        );
+        const coordinatesContainer = document.getElementById(
+          "coordinatesContainer"
+        );
+
+        coordinatesContainer.innerHTML = "";
+
+        const xInput = document.createElement("input");
+        xInput.type = "number";
+        xInput.placeholder = `Enter x-coordinate for point ${pointCount}`;
+        xInput.id = "xInput";
+
+        const yInput = document.createElement("input");
+        yInput.type = "number";
+        yInput.placeholder = `Enter y-coordinate for point ${pointCount}`;
+        yInput.id = "yInput";
+
+        const nextButton = document.getElementById("nextButton");
+        nextButton.disabled = false;
+
+        coordinatesContainer.appendChild(xInput);
+        coordinatesContainer.appendChild(yInput);
+      }
+
+      function nextCoordinate() {
+        const x = parseFloat(document.getElementById("xInput").value);
+        const y = parseFloat(document.getElementById("yInput").value);
+
+        if (!isNaN(x) && !isNaN(y)) {
+          points.push({ x, y });
+          pointCount++;
+
+          document.getElementById("xInput").value = "";
+          document.getElementById("yInput").value = "";
+
+          document.getElementById(
+            "xInput"
+          ).placeholder = `Enter x-coordinate for point ${pointCount}`;
+          document.getElementById(
+            "yInput"
+          ).placeholder = `Enter y-coordinate for point ${pointCount}`;
+
+          if (
+            pointCount >
+            parseInt(document.getElementById("numPoints").value, 10)
+          ) {
+            document.getElementById("nextButton").disabled = true;
+          }
+        } else {
+          alert("Please enter valid numeric coordinates.");
+        }
+      }
+
+      function updateGraph() {
+        const line = calculateLinearRegression(points);
+
+        const ctx = document.getElementById("scatterPlot").getContext("2d");
+        if (window.myChart) {
+          window.myChart.destroy();
+        }
+
+        window.myChart = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Data Points",
+                data: points,
+                pointBackgroundColor: "blue",
+              },
+              {
+                type: "line",
+                label: "Linear Regression Line",
+                data: [
+                  {
+                    x: Math.min(...points.map((point) => point.x)),
+                    y:
+                      line.m * Math.min(...points.map((point) => point.x)) +
+                      line.b,
+                  },
+                  {
+                    x: Math.max(...points.map((point) => point.x)),
+                    y:
+                      line.m * Math.max(...points.map((point) => point.x)) +
+                      line.b,
+                  },
+                ],
+                backgroundColor: "rgba(255, 0, 0, 0.5)",
+                borderColor: "red",
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              x: { type: "linear", position: "bottom" },
+              y: { type: "linear", position: "left" },
+            },
+          },
+        });
+      }
+
+      function calculateLinearRegression(points) {
+        const n = points.length;
+
+        let sX = 0;
+        let sY = 0;
+        let sXY = 0;
+        let sXX = 0;
+
+        points.forEach((point) => {
+          sX += point.x;
+          sY += point.y;
+          sXY += point.x * point.y;
+          //console.log(sXY)
+          sXX += point.x * point.x;
+        });
+
+
+        const m = (n * sXY - sX * sY) / (n * sXX - sX * sX);
+        const b = (sY - m * sX) / n;
+
+        return { m, b };
+      }
+    </script>
+  </body>
+</html>
